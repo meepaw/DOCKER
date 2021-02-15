@@ -1,5 +1,5 @@
 #pulling images (getting latest images if not specifying tag)
-dokcer pull [images]:[tag]
+dokcer pull IMAGES:TAG
 
 #seeing all images
 docker images
@@ -8,15 +8,123 @@ docker images
 docker container ls
 
 #seeing all running or not running container 
-docker container ls -la
+docker container ls --all
 
-#creating container with random name
-docker container create [image]:[tag]
+#create container with random name
+docker container create IMAGES:TAG
 
-#creating container with specified name
-docker container create --name [name] [image]:[tag]
+#create container with specified name
+docker container create --name NAME IMAGE:TAG
+
+#create container with specified port
+docker container create --name CONTAINER -p DOCKERPORT:CONTAINERPORT  IMAGE:TAG
 
 #running container
-docker container start [ct-name]
+docker container start CONTAINER
+
+#delete container
+docker container rm CONTAINER
+*if you want to remove the ct, you need to stop the container first
+
+#stop container
+docker container stop CONTAINER
+
+#delete image
+docker image rm IMAGE:TAG
+*you need to stop and remove the ct that using this image
+
+#build our own image with dockerfile
+*make your dockerfile with your favorite text editor, im here using nano and im using my simple "Hello World" app that write in go language
+*here's information from below command
+*line "FROM" is for tell the dockerfile that we want to take the the app from image registry(dockerhub)
+*line "COPY" is for tell the dockerfile to copy our helloworld app on our local to specified directory which is /home/arief/golang/belajar-docker/
+*line "CMD" is for tell the dockerfile to run our golang app with "go run" command, following with the directory that we specified before 
+
+					/belajar-docker/dockerfile
+FROM golang:1.15-alpine
+
+COPY main.go /home/arief/golang/belajar-docker/
+
+CMD ["go", "run", "/home/arief/golang/belajar-docker/main.go"]
 
 
+*exit and save the file, then build your dockerfile with following command:
+
+$ docker build --tag your_image_name:your_image_tag "."
+*ex $ docker build --tag myapp:1.0 .
+
+*make sure that our images is already builded with "docker images ls --all"
+*if we success build our own image then we need to make the container from our image then start the container
+*ex $ docker container create --name myapp -p 7070:8080 myapp:1.0
+    $ docker container start myapp
+*then check if we success run our app with our own images with your ip server/localhost ex* type on your browser "localhost:7070" then enter
+
+#push your own images to dockerhub (image registry)
+*you need to login first to the dockerhub before you can push your images with "docker login" on your prompt then fill with your credential
+
+docker tag local-image:tagname reponame:tagname
+docker push reponame:tagname
+
+*ex $ docker tag myapp:1.0 meegraine/myapp:1.0
+    $ docker push meegraine/myapp:1.0
+
+#create docker network
+docker network create network_name
+
+#join container to a network
+docker network connect network_name ct_name
+
+*ex $ docker network connect my_network1 mongo
+    $ docker network connect my_network1 redis
+    $ docker network connect my_network1 java
+
+#docker volume (for backup,restore or migrate data volume)
+docker volume create volume_name
+
+*with volume you'll not lose your data if you delete your ct. Just create with the same environment then define the volume name
+*use flag "-v" to define your volume or where path that you want to store your data
+*im here using mongodb where the default path for mongo to store data is "/data/db" and default port for mongo is "27017"
+*ex $ docker container create --name ctname -p dockerport:app-port -v volume_name:/path/path images:tag
+    $ docker container create --name mongodb -p 7001:27017 -v mongo-data:/data/db docker.io/mongo:3.6
+
+#docker exec (run a command in a running container)
+docker exec -it [option] CONTAINER COMMAND
+
+*ex $ docker exec -it redis /bin/bash
+root@5bef06ae66da2:/data# ls -la
+root@5bef06ae66da2:/data# dump.rdb
+root@5bef06ae66da2:/data# exit
+    $
+
+#docker prune (remove unused) will remove all image/container/network/volume that unused or not associate at any image/container etc
+docker images prune (remove unused image) 
+docker container prune (remove unused container)
+docker network prune (remove unused network) etc.
+
+*what if we want to remove all simultaneously?
+docker system prune (remove unused data) #include images,container,volume etc.
+WARNING! This will remove:
+        - all stopped containers
+        - all networks not used by at least one container
+        - all dangling images
+        - all build cache
+Are you sure you want to continue? [y/N] y
+
+#By default, volumes are not removed to prevent important data from being deleted if there is currently no container using the volume. Use the --volumes flag when running the command to prune volumes as well:
+
+docker system prune -a --volumes
+
+WARNING! This will remove:
+        - all stopped containers
+        - all networks not used by at least one container
+        - all volumes not used by at least one container
+        - all images without at least one container associated to them
+        - all build cache
+Are you sure you want to continue? [y/N] y
+
+#docker df (show docker disk usage)
+*ex $ docker system df
+TYPE                TOTAL               ACTIVE              SIZE                RECLAIMABLE
+Images              3                   2                   746.5 MB            299.4 MB (40%)
+Containers          2                   2                   9.207 MB            0 B (0%)
+Local Volumes       15                  2                   2.209 GB            1.89 GB (85%)
